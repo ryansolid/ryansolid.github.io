@@ -1,19 +1,19 @@
 {
   "files": {
-    "static/js/0.a3502e13.chunk.js": "/solid-hackernews-app/static/js/0.a3502e13.chunk.js",
-    "app-nav.js": "/solid-hackernews-app/static/js/app-nav.61a9c0b1.chunk.js",
-    "comment-item.js": "/solid-hackernews-app/static/js/comment-item.a6ae75cd.chunk.js",
-    "hacker-news.js": "/solid-hackernews-app/static/js/hacker-news.0ebe0a6d.chunk.js",
-    "main.js": "/solid-hackernews-app/static/js/main.b4f04cce.chunk.js",
-    "runtime~main.js": "/solid-hackernews-app/static/js/runtime~main.7db04d87.js",
-    "stories-page.js": "/solid-hackernews-app/static/js/stories-page.d0a6a579.chunk.js",
-    "story-item.js": "/solid-hackernews-app/static/js/story-item.f9bdf80f.chunk.js",
-    "story-page.js": "/solid-hackernews-app/static/js/story-page.6fb7a985.chunk.js",
-    "user-page.js": "/solid-hackernews-app/static/js/user-page.6e655327.chunk.js",
-    "static/js/10.d822c80a.chunk.js": "/solid-hackernews-app/static/js/10.d822c80a.chunk.js",
-    "static/js/11.62c43bb8.chunk.js": "/solid-hackernews-app/static/js/11.62c43bb8.chunk.js",
+    "static/js/0.0e17abb9.chunk.js": "/solid-hackernews-app/static/js/0.0e17abb9.chunk.js",
+    "app-nav.js": "/solid-hackernews-app/static/js/app-nav.56fb98eb.chunk.js",
+    "comment-item.js": "/solid-hackernews-app/static/js/comment-item.19a443eb.chunk.js",
+    "hacker-news.js": "/solid-hackernews-app/static/js/hacker-news.5379e670.chunk.js",
+    "main.js": "/solid-hackernews-app/static/js/main.d897ee08.chunk.js",
+    "runtime~main.js": "/solid-hackernews-app/static/js/runtime~main.08652643.js",
+    "stories-page.js": "/solid-hackernews-app/static/js/stories-page.3fe30a6f.chunk.js",
+    "story-item.js": "/solid-hackernews-app/static/js/story-item.b80c8aaa.chunk.js",
+    "story-page.js": "/solid-hackernews-app/static/js/story-page.48bed70a.chunk.js",
+    "user-page.js": "/solid-hackernews-app/static/js/user-page.96eb8230.chunk.js",
+    "static/js/10.4150aed7.chunk.js": "/solid-hackernews-app/static/js/10.4150aed7.chunk.js",
+    "static/js/11.d0b23041.chunk.js": "/solid-hackernews-app/static/js/11.d0b23041.chunk.js",
     "index.html": "/solid-hackernews-app/index.html",
-    "precache-manifest.76e6174e0b818bbe5982f64a5d4ad1d3.js": "/solid-hackernews-app/precache-manifest.76e6174e0b818bbe5982f64a5d4ad1d3.js",
+    "precache-manifest.35f7c61751cac4ef6adb074fd96ce251.js": "/solid-hackernews-app/precache-manifest.35f7c61751cac4ef6adb074fd96ce251.js",
     "service-worker.js": "/solid-hackernews-app/service-worker.js"
   }
 }
