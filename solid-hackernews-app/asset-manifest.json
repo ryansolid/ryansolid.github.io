@@ -1,18 +1,18 @@
 {
   "files": {
-    "static/js/0.419636d1.chunk.js": "/solid-hackernews-app/static/js/0.419636d1.chunk.js",
+    "static/js/0.7b1b1222.chunk.js": "/solid-hackernews-app/static/js/0.7b1b1222.chunk.js",
     "app-nav.js": "/solid-hackernews-app/static/js/app-nav.db086596.chunk.js",
-    "comment-item.js": "/solid-hackernews-app/static/js/comment-item.a170f406.chunk.js",
-    "hacker-news.js": "/solid-hackernews-app/static/js/hacker-news.99b9e3c5.chunk.js",
+    "comment-item.js": "/solid-hackernews-app/static/js/comment-item.96f26fa2.chunk.js",
+    "hacker-news.js": "/solid-hackernews-app/static/js/hacker-news.a9a02e50.chunk.js",
     "main.js": "/solid-hackernews-app/static/js/main.cd57ffb0.chunk.js",
-    "runtime~main.js": "/solid-hackernews-app/static/js/runtime~main.a8f6c7f8.js",
-    "stories-page.js": "/solid-hackernews-app/static/js/stories-page.e9c5ab9c.chunk.js",
-    "story-item.js": "/solid-hackernews-app/static/js/story-item.f2256d37.chunk.js",
-    "story-page.js": "/solid-hackernews-app/static/js/story-page.29220b50.chunk.js",
-    "user-page.js": "/solid-hackernews-app/static/js/user-page.f6d00bd1.chunk.js",
+    "runtime~main.js": "/solid-hackernews-app/static/js/runtime~main.c0387a9e.js",
+    "stories-page.js": "/solid-hackernews-app/static/js/stories-page.61f8eced.chunk.js",
+    "story-item.js": "/solid-hackernews-app/static/js/story-item.a3ac06d4.chunk.js",
+    "story-page.js": "/solid-hackernews-app/static/js/story-page.f4208746.chunk.js",
+    "user-page.js": "/solid-hackernews-app/static/js/user-page.9167bd35.chunk.js",
     "static/js/10.8b4c3b16.chunk.js": "/solid-hackernews-app/static/js/10.8b4c3b16.chunk.js",
     "index.html": "/solid-hackernews-app/index.html",
-    "precache-manifest.f53724d17e7faa957dbcc4ac5f9f864c.js": "/solid-hackernews-app/precache-manifest.f53724d17e7faa957dbcc4ac5f9f864c.js",
+    "precache-manifest.8b8e162d55b6a4a0dc403b8062fd098c.js": "/solid-hackernews-app/precache-manifest.8b8e162d55b6a4a0dc403b8062fd098c.js",
     "service-worker.js": "/solid-hackernews-app/service-worker.js"
   }
 }
