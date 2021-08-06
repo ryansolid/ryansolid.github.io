@@ -809,7 +809,6 @@
   const _tmpl$ = template(`<div class="container"></div>`),
         _tmpl$2 = template(`<div class="dot"> </div>`);
   const TARGET = 25;
-  let SS;
 
   const TriangleDemo = () => {
     const [elapsed, setElapsed] = createSignal(0),
@@ -821,7 +820,6 @@
     }),
           start = Date.now(),
           t = setInterval(() => startTransition(() => setSeconds(seconds() % 10 + 1)), 1000);
-    createRenderEffect(() => SS = seconds());
     let f;
 
     const update = () => {
@@ -927,7 +925,7 @@
 
       createRenderEffect(_p$ => {
         const _v$ = hover() ? "#ff0" : "#61dafb",
-              _v$2 = hover() ? "**" + SS + text() + "**" : text();
+              _v$2 = hover() ? "**" + text() + "**" : text();
 
         _v$ !== _p$._v$ && _el$2.style.setProperty("background", _p$._v$ = _v$);
         _v$2 !== _p$._v$2 && (_el$3.data = _p$._v$2 = _v$2);
