@@ -131,6 +131,7 @@
   const [transPending, setTransPending] = /*@__PURE__*/createSignal(false);
   var Owner = null;
   let Transition = null;
+  let Scheduler = null;
   let Listener = null;
   let Pending = null;
   let Updates = null;
@@ -173,19 +174,15 @@
       return writeSignal(s, value);
     }];
   }
-  function createComputed(fn, value, options) {
-    updateComputation(createComputation(fn, value, true));
-  }
   function createRenderEffect(fn, value, options) {
-    updateComputation(createComputation(fn, value, false));
+    updateComputation(createComputation(fn, value, false, STALE));
   }
   function createMemo(fn, value, options) {
     options = options ? Object.assign({}, signalOptions, options) : signalOptions;
-    const c = createComputation(fn, value, true);
+    const c = createComputation(fn, value, true, 0);
     c.pending = NOTPENDING;
     c.observers = null;
     c.observerSlots = null;
-    c.state = 0;
     c.comparator = options.equals || undefined;
     updateComputation(c);
     return readSignal.bind(c);
@@ -223,54 +220,32 @@
     if (Owner === null) ;else if (Owner.cleanups === null) Owner.cleanups = [fn];else Owner.cleanups.push(fn);
     return fn;
   }
-  function useTransition() {
-    return [transPending, (fn, cb) => {
-      if (SuspenseContext) {
-        Transition || (Transition = {
-          sources: new Set(),
-          effects: [],
-          promises: new Set(),
-          disposed: new Set(),
-          tasks: new Set(),
-          running: true,
-          cb: []
-        });
-        cb && Transition.cb.push(cb);
-        Transition.running = true;
-      }
-      batch(fn);
-      if (!SuspenseContext && cb) cb();
-    }];
+  function enableScheduling(scheduler = requestCallback) {
+    Scheduler = scheduler;
   }
-  function resumeEffects(e) {
-    Transition && (Transition.running = true);
-    Effects.push.apply(Effects, e);
-    e.length = 0;
-  }
-  function createContext(defaultValue) {
-    const id = Symbol("context");
-    return {
-      id,
-      Provider: createProvider(id),
-      defaultValue
-    };
-  }
-  function useContext(context) {
-    return lookup(Owner, context.id) || context.defaultValue;
-  }
-  function children(fn) {
-    const children = createMemo(fn);
-    return createMemo(() => resolveChildren(children()));
+  function startTransition(fn, cb) {
+    if (Scheduler || SuspenseContext) {
+      Transition || (Transition = {
+        sources: new Set(),
+        effects: [],
+        promises: new Set(),
+        disposed: new Set(),
+        queue: new Set(),
+        running: true,
+        cb: []
+      });
+      cb && Transition.cb.push(cb);
+      Transition.running = true;
+    }
+    batch(fn);
+    if (!Scheduler && !SuspenseContext && cb) cb();
   }
   let SuspenseContext;
-  function getSuspenseContext() {
-    return SuspenseContext || (SuspenseContext = createContext({}));
-  }
   function readSignal() {
     if (this.state && this.sources) {
       const updates = Updates;
       Updates = null;
-      this.state === STALE ? updateComputation(this) : lookDownstream(this);
+      this.state === STALE || Transition && Transition.running && this.tState ? updateComputation(this) : lookDownstream(this);
       Updates = updates;
     }
     if (Listener) {
@@ -304,20 +279,22 @@
       node.pending = value;
       return value;
     }
+    let TransitionRunning = false;
     if (Transition) {
-      if (Transition.running || !isComp && Transition.sources.has(node)) {
+      TransitionRunning = Transition.running;
+      if (TransitionRunning || !isComp && Transition.sources.has(node)) {
         Transition.sources.add(node);
         node.tValue = value;
       }
-      if (!Transition.running) node.value = value;
+      if (!TransitionRunning) node.value = value;
     } else node.value = value;
     if (node.observers && (!Updates || node.observers.length)) {
       runUpdates(() => {
         for (let i = 0; i < node.observers.length; i += 1) {
           const o = node.observers[i];
-          if (Transition && Transition.running && Transition.disposed.has(o)) continue;
+          if (TransitionRunning && Transition.disposed.has(o)) continue;
           if (o.observers && o.state !== PENDING) markUpstream(o);
-          o.state = STALE;
+          if (TransitionRunning) o.tState = STALE;else o.state = STALE;
           if (o.pure) Updates.push(o);else Effects.push(o);
         }
         if (Updates.length > 10e5) {
@@ -362,10 +339,10 @@
       node.updatedAt = time;
     }
   }
-  function createComputation(fn, init, pure, options) {
+  function createComputation(fn, init, pure, state = STALE, options) {
     const c = {
       fn,
-      state: STALE,
+      state: state,
       updatedAt: null,
       owned: null,
       sources: null,
@@ -376,6 +353,10 @@
       context: null,
       pure
     };
+    if (Transition && Transition.running) {
+      c.state = 0;
+      c.tState = state;
+    }
     if (Owner === null) ;else if (Owner !== UNOWNED) {
       if (Transition && Transition.running && Owner.pure) {
         if (!Owner.tOwned) Owner.tOwned = [c];else Owner.tOwned.push(c);
@@ -386,13 +367,13 @@
     return c;
   }
   function runTop(node) {
-    if (node.state !== STALE) return;
+    const runningTransition = Transition && Transition.running;
+    if (node.state !== STALE && !(runningTransition && node.tState)) return;
     if (node.suspense && untrack(node.suspense.inFallback)) return node.suspense.effects.push(node);
-    const ancestors = [node],
-          runningTransition = Transition && Transition.running;
+    const ancestors = [node];
     while ((node = node.owner) && (!node.updatedAt || node.updatedAt < ExecCount)) {
       if (runningTransition && Transition.disposed.has(node)) return;
-      if (node.state === STALE || node.state === PENDING) ancestors.push(node);
+      if (node.state || runningTransition && node.tState) ancestors.push(node);
     }
     for (let i = ancestors.length - 1; i >= 0; i--) {
       node = ancestors[i];
@@ -403,7 +384,7 @@
           if (Transition.disposed.has(top)) return;
         }
       }
-      if (node.state === STALE) {
+      if (node.state === STALE || runningTransition && node.tState) {
         updateComputation(node);
       } else if (node.state === PENDING) {
         const updates = Updates;
@@ -429,13 +410,13 @@
   }
   function completeUpdates(wait) {
     if (Updates) {
-      if (Transition && Transition.running) scheduleQueue(Updates);else runQueue(Updates);
+      if (Scheduler && Transition && Transition.running) scheduleQueue(Updates);else runQueue(Updates);
       Updates = null;
     }
     if (wait) return;
     let cbs;
     if (Transition && Transition.running) {
-      if (Transition.promises.size || Transition.tasks.size) {
+      if (Transition.promises.size || Transition.queue.size) {
         Transition.running = false;
         Transition.effects.push.apply(Transition.effects, Effects);
         Effects = null;
@@ -444,6 +425,10 @@
       }
       const sources = Transition.sources;
       cbs = Transition.cb;
+      Effects.forEach(e => {
+        e.state = STALE;
+        delete e.tState;
+      });
       Transition = null;
       batch(() => {
         sources.forEach(v => {
@@ -454,6 +439,7 @@
           if (v.tOwned) v.owned = v.tOwned;
           delete v.tValue;
           delete v.tOwned;
+          v.tState = 0;
         });
         setTransPending(false);
       });
@@ -472,20 +458,22 @@
   function scheduleQueue(queue) {
     for (let i = 0; i < queue.length; i++) {
       const item = queue[i];
-      const tasks = Transition.tasks;
-      let task;
-      tasks.add(task = requestCallback(() => {
-        tasks.delete(task);
-        runUpdates(() => {
-          Transition.running = true;
-          runTop(item);
-          if (!tasks.size) {
-            Effects.push.apply(Effects, Transition.effects);
-            Transition.effects = [];
-          }
-        }, false);
-        Transition && (Transition.running = false);
-      }));
+      const tasks = Transition.queue;
+      if (!tasks.has(item)) {
+        tasks.add(item);
+        Scheduler(() => {
+          tasks.delete(item);
+          runUpdates(() => {
+            Transition.running = true;
+            runTop(item);
+            if (!tasks.size) {
+              Effects.push.apply(Effects, Transition.effects);
+              Transition.effects = [];
+            }
+          }, false);
+          Transition && (Transition.running = false);
+        });
+      }
     }
   }
   function lookDownstream(node) {
@@ -493,7 +481,7 @@
     for (let i = 0; i < node.sources.length; i += 1) {
       const source = node.sources[i];
       if (source.sources) {
-        if (source.state === STALE) runTop(source);else if (source.state === PENDING) lookDownstream(source);
+        if (source.state === STALE || Transition && Transition.running && source.tState) runTop(source);else if (source.state === PENDING) lookDownstream(source);
       }
     }
   }
@@ -538,12 +526,12 @@
       for (i = 0; i < node.cleanups.length; i++) node.cleanups[i]();
       node.cleanups = null;
     }
-    node.state = 0;
+    if (Transition && Transition.running) node.tState = 0;else node.state = 0;
     node.context = null;
   }
   function reset(node, top) {
     if (!top) {
-      node.state = 0;
+      node.tState = 0;
       Transition.disposed.add(node);
     }
     if (node.owned) {
@@ -553,76 +541,9 @@
   function handleError(err) {
     throw err;
   }
-  function lookup(owner, key) {
-    return owner && (owner.context && owner.context[key] || owner.owner && lookup(owner.owner, key));
-  }
-  function resolveChildren(children) {
-    if (typeof children === "function" && !children.length) return resolveChildren(children());
-    if (Array.isArray(children)) {
-      const results = [];
-      for (let i = 0; i < children.length; i++) {
-        const result = resolveChildren(children[i]);
-        Array.isArray(result) ? results.push.apply(results, result) : results.push(result);
-      }
-      return results;
-    }
-    return children;
-  }
-  function createProvider(id) {
-    return function provider(props) {
-      let res;
-      createComputed(() => res = untrack(() => {
-        Owner.context = {
-          [id]: props.value
-        };
-        return children(() => props.children);
-      }));
-      return res;
-    };
-  }
 
   function createComponent(Comp, props) {
     return untrack(() => Comp(props));
-  }
-
-  const SuspenseListContext = createContext();
-  function Suspense(props) {
-    let counter = 0,
-        showContent,
-        showFallback;
-    const [inFallback, setFallback] = createSignal(false),
-          SuspenseContext = getSuspenseContext(),
-          store = {
-      increment: () => {
-        if (++counter === 1) setFallback(true);
-      },
-      decrement: () => {
-        if (--counter === 0) setFallback(false);
-      },
-      inFallback,
-      effects: [],
-      resolved: false
-    };
-    const listContext = useContext(SuspenseListContext);
-    if (listContext) [showContent, showFallback] = listContext.register(store.inFallback);
-    return createComponent(SuspenseContext.Provider, {
-      value: store,
-      get children() {
-        const rendered = untrack(() => props.children);
-        return createMemo(() => {
-          const inFallback = store.inFallback(),
-                visibleContent = showContent ? showContent() : true,
-                visibleFallback = showFallback ? showFallback() : true;
-          if (!inFallback && visibleContent) {
-            store.resolved = true;
-            resumeEffects(store.effects);
-            return rendered;
-          }
-          if (!visibleFallback) return;
-          return props.fallback;
-        });
-      }
-    });
   }
 
   function reconcileArrays(parentNode, a, b) {
@@ -808,12 +729,12 @@
 
   const _tmpl$ = template(`<div class="container"></div>`),
         _tmpl$2 = template(`<div class="dot"> </div>`);
+  enableScheduling();
   const TARGET = 25;
 
   const TriangleDemo = () => {
     const [elapsed, setElapsed] = createSignal(0),
           [seconds, setSeconds] = createSignal(0),
-          [, startTransition] = useTransition(),
           scale = createMemo(() => {
       const e = elapsed() / 1000 % 10;
       return 1 + (e > 5 ? 10 - e : e) / 10;
@@ -834,16 +755,11 @@
     return (() => {
       const _el$ = _tmpl$.cloneNode(true);
 
-      insert(_el$, createComponent(Suspense, {
-        get children() {
-          return createComponent(Triangle, {
-            x: 0,
-            y: 0,
-            s: 1000,
-            seconds: seconds
-          });
-        }
-
+      insert(_el$, createComponent(Triangle, {
+        x: 0,
+        y: 0,
+        s: 1000,
+        seconds: seconds
       }));
 
       createRenderEffect(() => _el$.style.setProperty("transform", "scaleX(" + scale() / 2.1 + ") scaleY(0.7) translateZ(0.1px)"));
